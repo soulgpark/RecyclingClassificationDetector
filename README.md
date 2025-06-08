@@ -1,6 +1,6 @@
 # ♻️Recycling Classification Detector
 
-이 프로젝트는 실시간 쓰레기 분류와 제스처 기반 드래그 기능을 제공합니다.  웹캠으로 캡처된 이미지를 쓰레기 종류를 자동으로 인식하고, 인식된 쓰레기 아이콘을 손 제스처로 드래그하여 분리수거 통에 배치할 수 있습니다.
+이 프로젝트는 실시간 쓰레기 분류하고, 제스처 기반 드래그하는 기능을 제공합니다. 사용자는 자신의 웹캠을 통해 실제 쓰레기 사진을 보여주면, 시스템은 이를 자동으로 인식하고 해당 쓰레기의 종류를 화면에 표시합니다. 이후 인식된 쓰레기 이미지를 손가락으로 직접 드래그하여 분리수거 통 영역으로 이동시킬수 있습니다.
 
 
 https://github.com/user-attachments/assets/420aebdf-6b09-40df-b799-943b43be572a
@@ -203,7 +203,7 @@ RecyclingTrashClassifier/
 
 
 2. **Confusion Matrix (Normalized)**
-<img src="https://github.com/user-attachments/assets/2cbd989c-7da4-4ee0-870b-a7712d2891c1" width="50%">
+<img src="https://github.com/user-attachments/assets/840e486b-4ddb-4dbd-bb8b-e0aed6b1e586" width="50%">
 
 | 예측\실제 | can | paper | plastic |
 |:---------:|:-----:|:-----:|:-------:|
