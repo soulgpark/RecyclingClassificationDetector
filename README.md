@@ -184,13 +184,14 @@ RecyclingTrashClassifier/
 실제 데이터셋에서 학습된 모델의 성능을 다음과 같이 평가하였습니다:
 
 1. **Confusion Matrix**
-![confusion_matrix](https://github.com/user-attachments/assets/5db10902-d9db-40fc-b915-f3bb1bb36250)
 
-    | 예측\실제 | can | paper | plastic |
-    |:---------:|:-----:|:-----:|:-------:|
-    | **can**   |  98   |   0   |    4    |
-    | **paper**   |   0   |  93   |   19    |
-    | **plastic** |   4   |   2   |   60    |
+<img src="https://github.com/user-attachments/assets/5db10902-d9db-40fc-b915-f3bb1bb36250" width="50%">
+
+| 예측\실제 | can | paper | plastic |
+|:---------:|:-----:|:-----:|:-------:|
+| **can**   |  98   |   0   |    4    |
+| **paper**   |   0   |  93   |   19    |
+| **plastic** |   4   |   2   |   60    |
 
    * 각 클래스(캔, 종이, 플라스틱)에 대한 오차 행렬을 통해 분류 정확도를 정밀 분석
    * 일부 오분류가 존재하지만 전체적으로 높은 정확도
@@ -202,19 +203,20 @@ RecyclingTrashClassifier/
 
 
 2. **Confusion Matrix (Normalized)**
-![confusion_matrix_normalized](https://github.com/user-attachments/assets/2cbd989c-7da4-4ee0-870b-a7712d2891c1)
+<img src="https://github.com/user-attachments/assets/2cbd989c-7da4-4ee0-870b-a7712d2891c1" width="50%">
 
-    | 예측\실제 | can | paper | plastic |
-    |:---------:|:-----:|:-----:|:-------:|
-    | **can**   | 0.96  | 0.00  | 0.05    |
-    | **paper**   | 0.00  | 0.98  | 0.23    |
-    | **plastic** | 0.04  | 0.02  | 0.72    |
+| 예측\실제 | can | paper | plastic |
+|:---------:|:-----:|:-----:|:-------:|
+| **can**   | 0.96  | 0.00  | 0.05    |
+| **paper**   | 0.00  | 0.98  | 0.23    |
+| **plastic** | 0.04  | 0.02  | 0.72    |
+
 
    * 클래스별 데이터 수 불균형 영향을 배제하기 위해 정규화된 혼동 행렬을 사용
    * paper → plastic, can → plastic 특정 클래스 간 혼동이 존재
 
 3. **학습 곡선(Training Curves)**
-![results](https://github.com/user-attachments/assets/35a5658b-a4a7-43fc-8322-00978fc8160a)
+<img src="https://github.com/user-attachments/assets/35a5658b-a4a7-43fc-8322-00978fc8160a" width="50%">
 
    * Train Loss는 지속적으로 감소하여 안정적인 학습 확인
    * validation Loss는 후반부에 overfitting 경향 보임
