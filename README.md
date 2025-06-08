@@ -198,7 +198,7 @@ RecyclingTrashClassifier/
    * plastic 클래스에서 상대적으로 성능이 낮음
 
    - **can** 클래스는 98% 정확히 예측
-   - **paper** 클래스는 93% 정확도를 보임임
+   - **paper** 클래스는 93% 정확도를 보임
    - **plastic** 클래스는 약 91%이 plastic으로 올바르게 예측
 
 
