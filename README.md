@@ -9,7 +9,7 @@
 ### 1. YOLOv8 Classification
 
 * **모델 아키텍처**: Ultralytics의 YOLOv8 분류 모델은 경량화된 CNN 기반의 분류 네트워크입니다. 기본 블록으로 CSPDarknet과 BottleneckCSP 구조를 사용하며, 최종 출력층은 클래스별 확률을 계산하는 Fully Connected 레이어로 구성됩니다.
-* **사전 학습 모델**: `yolov8n-cls.pt` (nano) 모델을을 활용하여 쓰레기 데이터셋에 맞춰 미세 조정 가능합니다.
+* **사전 학습 모델**: `yolov8n-cls.pt` (nano) 모델 활용하여 쓰레기 데이터셋에 맞춰 미세 조정 가능합니다.
 * **커스텀 학습**: 필요에 따라 `Ultralytics YOLO` API를 통해 커스텀 데이터셋으로 재학습하며, 학습 시 `epochs`, `batch size`, `learning rate`를 조절합니다.
 
 ### 2. 투표 기반 안정화(Voting)
@@ -48,17 +48,42 @@
 
 ---
 
+## 전체 프로세스
+
+다음 다이어그램은 시스템의 흐름을 요약한 것입니다
+
+```mermaid
+flowchart LR
+    A[웹캠 프레임 캡처] --> B[분류 (YOLOv8 + Voting)]
+    B --> C[결과 저장 & 상단 GUI 표시]
+    C --> D[손 랜드마크 추출 (MediaPipe)]
+    D --> E{아이콘 드래그 상태}
+    E -->|드래그 시작| F[아이콘 위치 업데이트]
+    F --> G{통 영역 드롭 감지}
+    G -->|정확| H[애니메이션 이동]
+    G -->|오분류| I[원위치 복귀 & 경고 메시지]
+```
+
+1. **웹캠 프레임 캡처**: OpenCV `VideoCapture`를 통해 연속된 프레임 획득.
+2. **분류**: `vote_classification()` 함수에서 YOLOv8 모델 예측 및 Voting 처리.
+3. **결과 저장**: 최종 클래스 확정 시 이미지(`current_trash.jpg`)와 텍스트(`trash_type.txt`)로 로컬 저장.
+4. **GUI 표시**: Tkinter 캔버스 상단에 쓰레기 이미지와 재활용 안내문 표시.
+5. **손 추적 & 드래그**: MediaPipe Hands로 인덱스 끝 좌표 추출, 드래그 로직 실행.
+6. **드롭 처리**: 통 위치와 드래그 위치를 비교하여 정답 시 애니메이션 이동, 오답 시 원위치 복귀 및 경고.
+
+---
+
 ## 주요 기능 상세
 
 ### 1. 실시간 분류
 
 * **프레임 캡처**: OpenCV `VideoCapture`로 웹캠 프레임을 획득하고, 호출 주기를 일정하게 유지합니다.
-* **분류 함수(`classify_frame`)**:
+* **분류 함수**:
 
-  1. 프레임을 모델 입력 크기에 맞춰 전처리.
-  2. YOLO 모델로 추론(`model.predict`).
-  3. 결과에서 확률이 가장 높은 클래스 추출.
-  4. 리스트에 저장 후 투표 방식으로 안정화.
+  1. 프레임을 모델 입력 크기에 맞춰 전처리
+  2. YOLO 모델로 추론
+  3. 결과에서 확률이 가장 높은 클래스 추출
+  4. 리스트에 저장 후 투표 방식으로 안정화
 
 ### 2. 이미지 안내 출력
 
@@ -131,27 +156,22 @@ RecyclingTrashClassifier/
 │   ├── train/
 │   └── val/                   # 이미지 분류용 데이터
 ├── trash_classifier.py        # 통합 실행 파일
-├── classify_trash.py          # 분류 전용 모듈
-├── detect_trash.py            # 드래그 전용 모듈
 ├── train_trash.py             # 학습용 스크립트
 ├── current_trash.jpg          # 분류 결과 이미지
 ├── trash_type.txt             # 분류 결과 클래스명 저장
 └── README.md
 ```
-
-* **classif\_trash.py**
-
-  * 모델 로드 및 단일 입력 이미지 분류 테스트
-  * CLI 인자를 받아 이미지 파일로 결과 저장
-* **detect_trash.py**
-
-  * YOLOv8 Detection 모델 기반 객체 탐지 후, 탐지된 객체를 분류 모델로 재분류
-  * 향후 다중 객체 지원을 위한 베이스 코드
 * **trash_classifier.py**
 
-  * `Tkinter` 기반 윈도우 생성 및 레이아웃 설정
-  * OpenCV 카메라 캡처, MediaPipe 손 추적, 아이콘 드래그/드롭 로직 실행
-
+  * 실시간 쓰레기 분류 (YOLOv8 + Voting)
+  * 손 제스처 기반 드래그
+  * GUI 기반 인터페이스 (Tkinter)
+  * 분류 결과 이미지/텍스트 저장 및 안내문 출력 포함
+* **train_trash.py**
+  
+  * Ultralytics YOLOv8 분류 모델 학습용 코드
+  * 커스텀 데이터셋(trash_dataset/)을 사용하여 fine-tuning
+  
 
 ---
 
@@ -160,19 +180,41 @@ RecyclingTrashClassifier/
 실제 데이터셋에서 학습된 모델의 성능을 다음과 같이 평가하였습니다:
 
 1. **Confusion Matrix**
+2. 
+    | 예측\실제 | can | paper | plastic |
+    |:---------:|:-----:|:-----:|:-------:|
+    | **can**   |  98   |   0   |    4    |
+    | **paper**   |   0   |  93   |   19    |
+    | **plastic** |   4   |   2   |   60    |
 
    * 각 클래스(캔, 종이, 플라스틱)에 대한 오차 행렬을 통해 분류 정확도를 정밀 분석
    * 일부 오분류가 존재하지만 전체적으로 높은 정확도
    * plastic 클래스에서 상대적으로 성능이 낮음
 
+   - **can** 클래스는 98% 정확히 예측
+   - **paper** 클래스는 93% 정확도를 보임임
+   - **plastic** 클래스는 약 91%이 plastic으로 올바르게 예측
 
-2. **Confusion Matrix (Normalized)**
+
+3. **Confusion Matrix (Normalized)**
+
+    | 예측\실제 | can | paper | plastic |
+    |:---------:|:-----:|:-----:|:-------:|
+    | **can**   | 0.96  | 0.00  | 0.05    |
+    | **paper**   | 0.00  | 0.98  | 0.23    |
+    | **plastic** | 0.04  | 0.02  | 0.72    |
 
    * 클래스별 데이터 수 불균형 영향을 배제하기 위해 정규화된 혼동 행렬을 사용
-   * 모든 클래스에서 1.00에 가까운 값으로, 모델이 안정적으로 작동함을 시각적으로 확인
+   * paper → plastic, can → plastic 특정 클래스 간 혼동이 존재
 
-3. **학습 곡선(Training Curves)**
-
+4. **학습 곡선(Training Curves)**
+| 지표               | 설명                                                                                                         |
+|--------------------|--------------------------------------------------------------------------------------------------------------|
+| **train/loss**     | - 초기 0.82 → 최종 0.02로 꾸준히 감소<br>- 모델이 학습 데이터에 잘 수렴함을 확인                                        |
+| **val/loss**       | - 초반 0.45 → 중반 0.60 부근에서 진동 후<br>- 30~50 epoch 구간에서 다시 0.75→0.95 사이로 상승        |
+| **metrics/accuracy_top1** | - 초기 0.80 → 최종 0.88로 안정적 상승<br>- Validation 상에서 88% 수준의 Top-1 정확도 달성                              |
+| **metrics/accuracy_top5** | -  1.00 유지                                                                                   |
+   
    * Train Loss는 지속적으로 감소하여 안정적인 학습 확인
    * validation Loss는 후반부에 overfitting 경향 보임
    * Top-1 정확도는 약 89%에서 수렴
