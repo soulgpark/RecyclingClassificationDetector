@@ -2,6 +2,10 @@
 
 이 프로젝트는 실시간 쓰레기 분류와 제스처 기반 드래그 기능을 제공합니다.  웹캠으로 캡처된 이미지를 쓰레기 종류를 자동으로 인식하고, 인식된 쓰레기 아이콘을 손 제스처로 드래그하여 분리수거 통에 배치할 수 있습니다.
 
+
+https://github.com/user-attachments/assets/420aebdf-6b09-40df-b799-943b43be572a
+
+
 ---
 
 ## 모델 설명
@@ -156,7 +160,7 @@ RecyclingTrashClassifier/
 │   ├── train/
 │   └── val/                   # 이미지 분류용 데이터
 ├── trash_classifier.py        # 통합 실행 파일
-├── train_trash.py             # 학습용 스크립트
+├── train_trash.py             # 학습 파일
 ├── current_trash.jpg          # 분류 결과 이미지
 ├── trash_type.txt             # 분류 결과 클래스명 저장
 └── README.md
@@ -180,7 +184,8 @@ RecyclingTrashClassifier/
 실제 데이터셋에서 학습된 모델의 성능을 다음과 같이 평가하였습니다:
 
 1. **Confusion Matrix**
-2. 
+![confusion_matrix](https://github.com/user-attachments/assets/5db10902-d9db-40fc-b915-f3bb1bb36250)
+
     | 예측\실제 | can | paper | plastic |
     |:---------:|:-----:|:-----:|:-------:|
     | **can**   |  98   |   0   |    4    |
@@ -196,7 +201,8 @@ RecyclingTrashClassifier/
    - **plastic** 클래스는 약 91%이 plastic으로 올바르게 예측
 
 
-3. **Confusion Matrix (Normalized)**
+2. **Confusion Matrix (Normalized)**
+![confusion_matrix_normalized](https://github.com/user-attachments/assets/2cbd989c-7da4-4ee0-870b-a7712d2891c1)
 
     | 예측\실제 | can | paper | plastic |
     |:---------:|:-----:|:-----:|:-------:|
@@ -207,7 +213,8 @@ RecyclingTrashClassifier/
    * 클래스별 데이터 수 불균형 영향을 배제하기 위해 정규화된 혼동 행렬을 사용
    * paper → plastic, can → plastic 특정 클래스 간 혼동이 존재
 
-4. **학습 곡선(Training Curves)**
+3. **학습 곡선(Training Curves)**
+![results](https://github.com/user-attachments/assets/35a5658b-a4a7-43fc-8322-00978fc8160a)
 
    * Train Loss는 지속적으로 감소하여 안정적인 학습 확인
    * validation Loss는 후반부에 overfitting 경향 보임
