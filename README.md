@@ -52,7 +52,7 @@
 
 다음 다이어그램은 시스템의 흐름을 요약한 것입니다
 
-```mermaid
+```
 flowchart LR
     A[웹캠 프레임 캡처] --> B[분류 (YOLOv8 + Voting)]
     B --> C[결과 저장 & 상단 GUI 표시]
@@ -208,13 +208,7 @@ RecyclingTrashClassifier/
    * paper → plastic, can → plastic 특정 클래스 간 혼동이 존재
 
 4. **학습 곡선(Training Curves)**
-| 지표               | 설명                                                                                                         |
-|--------------------|--------------------------------------------------------------------------------------------------------------|
-| **train/loss**     | - 초기 0.82 → 최종 0.02로 꾸준히 감소<br>- 모델이 학습 데이터에 잘 수렴함을 확인                                        |
-| **val/loss**       | - 초반 0.45 → 중반 0.60 부근에서 진동 후<br>- 30~50 epoch 구간에서 다시 0.75→0.95 사이로 상승        |
-| **metrics/accuracy_top1** | - 초기 0.80 → 최종 0.88로 안정적 상승<br>- Validation 상에서 88% 수준의 Top-1 정확도 달성                              |
-| **metrics/accuracy_top5** | -  1.00 유지                                                                                   |
-   
+
    * Train Loss는 지속적으로 감소하여 안정적인 학습 확인
    * validation Loss는 후반부에 overfitting 경향 보임
    * Top-1 정확도는 약 89%에서 수렴
