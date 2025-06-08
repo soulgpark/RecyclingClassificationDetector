@@ -1,2 +1,196 @@
-# TrashFinder
-A tool to detect and classify trash using computer vision
+# ♻️Recycling Classification Detector
+
+이 프로젝트는 실시간 쓰레기 분류와 제스처 기반 드래그 기능을 제공합니다.  웹캠으로 캡처된 이미지를 쓰레기 종류를 자동으로 인식하고, 인식된 쓰레기 아이콘을 손 제스처로 드래그하여 분리수거 통에 배치할 수 있습니다.
+
+---
+
+## 모델 설명
+
+### 1. YOLOv8 Classification
+
+* **모델 아키텍처**: Ultralytics의 YOLOv8 분류 모델은 경량화된 CNN 기반의 분류 네트워크입니다. 기본 블록으로 CSPDarknet과 BottleneckCSP 구조를 사용하며, 최종 출력층은 클래스별 확률을 계산하는 Fully Connected 레이어로 구성됩니다.
+* **사전 학습 모델**: `yolov8n-cls.pt` (nano) 모델을을 활용하여 쓰레기 데이터셋에 맞춰 미세 조정 가능합니다.
+* **커스텀 학습**: 필요에 따라 `Ultralytics YOLO` API를 통해 커스텀 데이터셋으로 재학습하며, 학습 시 `epochs`, `batch size`, `learning rate`를 조절합니다.
+
+### 2. 투표 기반 안정화(Voting)
+
+*  실시간 분류 시 순간적인 오탐지를 줄이고, 사용자에게 안정적인 결과를 제공하기 위해 프레임 단위 예측을 모아서 다수결 방식으로 최종 클래스를 결정합니다.
+* **방법**:
+
+  1. 연속된 `VOTE_FRAMES`(30프레임)마다 모델에서 예측된 클래스 레이블을 리스트에 저장.
+  2. 리스트의 최빈값을 구해 최종 클래스 결정.
+  3. 선택된 클래스가 이전 클래스와 다를 경우 일정 시간 이상 유지되어야 변경 적용.
+
+---
+
+## 데이터셋 구성
+
+1. **폴더 구조**:
+
+   ```
+   trash_dataset/
+   ├─ train/
+   │  ├─ plastic/
+   │  ├─ paper/
+   │  └─ can/
+   └── val/
+      ├── plastic/
+      ├── paper/
+      └── can/
+   ```
+2. **클래스별 이미지**: 각 클래스 폴더에는 해당 쓰레기 종류의 이미지 파일들을 저장합니다.
+3. **전처리**:
+
+   * **크기 통일**: 모든 이미지를 `imgsz`(256px)로 리사이즈.
+   * **정규화**: 픽셀 값을 `[0,1]` 범위로 스케일링.
+   * **데이터 증강(option)**: 회전, 플립, 밝기 변경 등을 적용해 모델 일반화 성능 향상.
+4. **학습/검증 분할**: 80% 학습, 20% 검증 세트 구성.
+
+---
+
+## 주요 기능 상세
+
+### 1. 실시간 분류
+
+* **프레임 캡처**: OpenCV `VideoCapture`로 웹캠 프레임을 획득하고, 호출 주기를 일정하게 유지합니다.
+* **분류 함수(`classify_frame`)**:
+
+  1. 프레임을 모델 입력 크기에 맞춰 전처리.
+  2. YOLO 모델로 추론(`model.predict`).
+  3. 결과에서 확률이 가장 높은 클래스 추출.
+  4. 리스트에 저장 후 투표 방식으로 안정화.
+
+### 2. 이미지 안내 출력
+
+* **상단 이미지**: 상단에 쓰레기 이미지를 나타냅니다.
+* **안내 텍스트**: 재활용 방법을 `RECYCLING_INSTRUCTION` 딕셔너리에서 가져와 표시합니다.
+
+### 3. 제스처 기반 드래그
+
+* **손 추적**: MediaPipe Hands 모듈을 사용하여 손 랜드마크를 추출하고, 인덱스 끝(`landmark[8]`) 좌표를 기준으로 드래그 포인터를 생성합니다.
+* **드래그 로직** (`drag_item` 함수):
+
+  1. 인덱스 끝 좌표와 아이콘 영역이 겹치면 `dragging=True`.
+  2. `dragging` 상태에서 손 움직임에 따라 아이콘 위치 업데이트.
+  3. 목표 통(`bins`) 영역에 닿으면 `on_drop` 호출.
+* **드롭 처리** (`on_drop` 함수):
+
+  * 정확한 통: `animate_to_bin` 함수를 통해 스무스 애니메이션.
+  * 오분류: 원위치 복귀와 함께 `show_warning` 함수로 메시지 표시.
+
+### 4. GUI 시각화
+
+* **GUI 메시지**: 상태 표시줄에 `정확히 분류되었습니다!` 또는 `잘못된 통입니다. 다시 시도하세요.` 문구 출력.
+* **결과 저장**: `current_trash.jpg` 이미지와 `trash_type.txt` 텍스트 파일을 로컬에 저장하는 옵션 제공.
+
+---
+
+## 사용법
+
+1. **필수 패키지 설치**
+
+   ```bash
+   pip install ultralytics mediapipe opencv-python pillow torch
+   ```
+2. **모델 학습**
+
+   ```python
+   from ultralytics import YOLO
+
+   # 사전 학습된 yolov8n-cls 불러오기
+   model = YOLO("yolov8n-cls.pt")
+
+   # 커스텀 데이터로 50 에포크 학습
+   model.train(
+       data="trash_dataset/train",
+       epochs=50,
+       imgsz=256,
+       batch=32,
+       lr0=0.01
+   )
+   ```
+3. **실행**
+
+   ```bash
+   python trash_classifier.py
+   ```
+
+---
+
+## 코드 구성 및 파일 설명
+
+```
+RecyclingTrashClassifier/
+├── runs/
+│   └── best.pt                # 학습된 YOLOv8 모델
+├── images/
+│   ├── 플라스틱.png
+│   ├── 종이.png
+│   └── 캔.png
+├── trash_dataset/
+│   ├── train/
+│   └── val/                   # 이미지 분류용 데이터
+├── trash_classifier.py        # 통합 실행 파일
+├── classify_trash.py          # 분류 전용 모듈
+├── detect_trash.py            # 드래그 전용 모듈
+├── train_trash.py             # 학습용 스크립트
+├── current_trash.jpg          # 분류 결과 이미지
+├── trash_type.txt             # 분류 결과 클래스명 저장
+└── README.md
+```
+
+* **classif\_trash.py**
+
+  * 모델 로드 및 단일 입력 이미지 분류 테스트
+  * CLI 인자를 받아 이미지 파일로 결과 저장
+* **detect_trash.py**
+
+  * YOLOv8 Detection 모델 기반 객체 탐지 후, 탐지된 객체를 분류 모델로 재분류
+  * 향후 다중 객체 지원을 위한 베이스 코드
+* **trash_classifier.py**
+
+  * `Tkinter` 기반 윈도우 생성 및 레이아웃 설정
+  * OpenCV 카메라 캡처, MediaPipe 손 추적, 아이콘 드래그/드롭 로직 실행
+
+
+---
+
+## 성능 평가
+
+실제 데이터셋에서 학습된 모델의 성능을 다음과 같이 평가하였습니다:
+
+1. **Confusion Matrix**
+
+   * 각 클래스(캔, 종이, 플라스틱)에 대한 오차 행렬을 통해 분류 정확도를 정밀 분석
+   * 일부 오분류가 존재하지만 전체적으로 높은 정확도
+   * plastic 클래스에서 상대적으로 성능이 낮음
+
+
+2. **Confusion Matrix (Normalized)**
+
+   * 클래스별 데이터 수 불균형 영향을 배제하기 위해 정규화된 혼동 행렬을 사용
+   * 모든 클래스에서 1.00에 가까운 값으로, 모델이 안정적으로 작동함을 시각적으로 확인
+
+3. **학습 곡선(Training Curves)**
+
+   * Train Loss는 지속적으로 감소하여 안정적인 학습 확인
+   * validation Loss는 후반부에 overfitting 경향 보임
+   * Top-1 정확도는 약 89%에서 수렴
+
+
+---
+
+## 한계점
+
+* **환경 민감성**: 조명, 배경 복잡도에 따라 MediaPipe 및 분류 모델 성능이 달라짐
+* **실시간 처리 속도**: CPU 에서 대용량 모델 사용 시 프레임 드랍 발생 가능
+* **클래스 확장**: 새로운 쓰레기 종류 추가 시 데이터 수집, 모델 재학습 필요
+* **제스처 인식 오류**: 손 가려짐, 빠른 손 움직임에 취약
+---
+
+## 향후 계획
+
+* **추론 최적화**: TensorRT, ONNX Runtime 적용으로 응답 시간 단축
+* **멀티플랫폼 배포**: 웹 앱, 모바일 앱으로 확장
+* **사용자 경험 개선**: 음성 안내, 터치스크린 제스처 추가, 통계 대시보드 제공
+* **데이터 자동 보강**: 사용자 환경에서 수집된 샘플 수집 및 준지도 학습 파이프라인 구축
